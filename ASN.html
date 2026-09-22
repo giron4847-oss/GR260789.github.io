@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ReelCloud — Mini plataforma de video</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0d0b;
+    --bg-panel: #17150f;
+    --line: #2a2620;
+    --amber: #e8a33d;
+    --amber-dim: #8a6524;
+    --text: #f3ede0;
+    --text-dim: #a89e8a;
+    --danger: #c9604a;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; background: var(--bg); color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  h1, h2, h3, .display { font-family: 'Fraunces', serif; }
+
+  header {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid var(--line);
+    position: sticky; top: env(safe-area-inset-top, 0px);
+    background: rgba(14,13,11,0.92);
+    backdrop-filter: blur(6px);
+    z-index: 5;
+  }
+  .brand {
+    display: flex; align-items: baseline; gap: 10px; margin-bottom: 18px;
+  }
+  .brand h1 { font-size: 1.6rem; font-weight: 700; margin: 0; color: var(--text); letter-spacing: -0.01em; }
+  .brand span { color: var(--amber); font-style: italic; font-weight: 500; }
+
+  .searchrow { display: flex; gap: 10px; max-width: 720px; flex-wrap: wrap; }
+  input[type=text], input[type=password] {
+    background: var(--bg-panel); border: 1px solid var(--line); color: var(--text);
+    padding: 12px 14px; border-radius: 3px; font-family: 'Space Grotesk', sans-serif; font-size: 0.95rem;
+    flex: 1; min-width: 160px;
+  }
+  input:focus { outline: none; border-color: var(--amber); }
+  button {
+    background: var(--amber); color: #1a1508; border: none; padding: 12px 20px;
+    border-radius: 3px; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 0.9rem;
+    cursor: pointer; transition: background 0.15s ease;
+  }
+  button:hover { background: #f2b455; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  button.ghost {
+    background: transparent; border: 1px solid var(--line); color: var(--text-dim);
+  }
+  button.ghost:hover { border-color: var(--amber); color: var(--amber); }
+
+  .keybox {
+    margin-top: 12px; font-size: 0.82rem; color: var(--text-dim);
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .keybox a { color: var(--amber); }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 28px 24px 80px; }
+
+  .status { color: var(--text-dim); font-size: 0.9rem; padding: 10px 2px; min-height: 1.4em; }
+  .status.error { color: var(--danger); }
+
+  .grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 18px; margin-top: 8px;
+  }
+  .card {
+    background: var(--bg-panel); border: 1px solid var(--line); border-radius: 4px; overflow: hidden;
+    cursor: pointer; transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+  .card:hover { border-color: var(--amber-dim); transform: translateY(-2px); }
+  .card img { width: 100%; display: block; aspect-ratio: 16/9; object-fit: cover; background: #221f18; }
+  .card-body { padding: 12px 14px 14px; }
+  .card-title {
+    font-size: 0.92rem; font-weight: 600; line-height: 1.3; margin: 0 0 6px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .card-channel { font-size: 0.78rem; color: var(--text-dim); margin: 0; }
+
+  .empty {
+    text-align: center; padding: 60px 20px; color: var(--text-dim);
+  }
+  .empty .display { font-size: 1.6rem; color: var(--text); margin-bottom: 8px; }
+
+  .overlay {
+    position: fixed; inset: 0; background: rgba(10,9,7,0.85); display: none;
+    align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto; z-index: 20;
+  }
+  .overlay.open { display: flex; }
+  .detail {
+    background: var(--bg-panel); border: 1px solid var(--line); border-radius: 6px;
+    max-width: 720px; width: 100%; padding: 26px; position: relative;
+  }
+  .detail img { width: 100%; border-radius: 4px; margin-bottom: 16px; aspect-ratio: 16/9; object-fit: cover; }
+  .detail h2 { margin: 0 0 6px; font-size: 1.4rem; }
+  .closebtn {
+    position: absolute; top: 16px; right: 16px; background: transparent; border: 1px solid var(--line);
+    width: 34px; height: 34px; border-radius: 50%; color: var(--text-dim); font-size: 1rem; padding: 0;
+  }
+  .stats { display: flex; gap: 18px; margin: 14px 0; flex-wrap: wrap; }
+  .stat { font-size: 0.85rem; color: var(--text-dim); }
+  .stat b { color: var(--amber); display: block; font-family: 'Fraunces', serif; font-size: 1.2rem; }
+  .channel-row {
+    display: flex; align-items: center; gap: 12px; margin: 18px 0; padding: 12px; background: var(--bg);
+    border-radius: 4px; border: 1px solid var(--line);
+  }
+  .channel-row img { width: 48px; height: 48px; border-radius: 50%; margin: 0; }
+  .channel-row .cn { font-weight: 600; margin: 0 0 3px; }
+  .channel-row .cs { font-size: 0.8rem; color: var(--text-dim); margin: 0; }
+  .desc {
+    font-size: 0.88rem; line-height: 1.55; color: var(--text-dim); white-space: pre-wrap;
+    max-height: 160px; overflow-y: auto; border-top: 1px solid var(--line); padding-top: 14px;
+  }
+
+  footer {
+    text-align: center; padding: 20px; color: var(--text-dim); font-size: 0.75rem;
+    border-top: 1px solid var(--line);
+  }
+
+  @media (max-width: 480px) {
+    .brand h1 { font-size: 1.3rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><h1>ReelCloud</h1><span>YouTube Data API v3</span></div>
+  <div class="searchrow">
+    <input type="text" id="q" placeholder="Buscar videos, ej. lofi hip hop" />
+    <button id="searchBtn">Buscar</button>
+    <button id="keyToggle" class="ghost" type="button">API Key</button>
+  </div>
+  <div class="keybox" id="keyPanel" style="display:none;">
+    <input type="password" id="apiKey" placeholder="Pega tu YouTube Data API Key" style="max-width:320px;" />
+    <button id="saveKey" class="ghost" type="button">Guardar</button>
+    <span>¿No tienes una? Créala gratis en <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener">Google Cloud Console</a></span>
+  </div>
+</header>
+
+<main>
+  <div class="status" id="status"></div>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="emptyState">
+    <div class="display">Busca algo para empezar</div>
+    <div>Esta app consume tres recursos de la nube: /search, /videos y /channels.</div>
+  </div>
+</main>
+
+<footer>Proyecto académico — consumo de la YouTube Data API v3 (Google Cloud) como servicio en la nube.</footer>
+
+<div class="overlay" id="overlay">
+  <div class="detail" id="detailBody"></div>
+</div>
+
+<script>
+const YT = 'https://www.googleapis.com/youtube/v3';
+const els = {
+  q: document.getElementById('q'),
+  searchBtn: document.getElementById('searchBtn'),
+  grid: document.getElementById('grid'),
+  status: document.getElementById('status'),
+  emptyState: document.getElementById('emptyState'),
+  overlay: document.getElementById('overlay'),
+  detailBody: document.getElementById('detailBody'),
+  keyToggle: document.getElementById('keyToggle'),
+  keyPanel: document.getElementById('keyPanel'),
+  apiKey: document.getElementById('apiKey'),
+  saveKey: document.getElementById('saveKey'),
+};
+
+function getKey() {
+  try { return localStorage.getItem('yt_api_key') || ''; } catch(e) { return ''; }
+}
+function setKey(k) {
+  try { localStorage.setItem('yt_api_key', k); } catch(e) {}
+}
+
+// init key field
+try {
+  const saved = getKey();
+  if (saved) els.apiKey.value = saved;
+} catch(e) {}
+
+els.keyToggle.addEventListener('click', () => {
+  els.keyPanel.style.display = els.keyPanel.style.display === 'none' ? 'flex' : 'none';
+});
+els.saveKey.addEventListener('click', () => {
+  setKey(els.apiKey.value.trim());
+  setStatus('API Key guardada localmente en este navegador.');
+});
+
+function setStatus(msg, isError) {
+  els.status.textContent = msg || '';
+  els.status.className = 'status' + (isError ? ' error' : '');
+}
+
+function fmt(n) {
+  n = Number(n || 0);
+  if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n/1000).toFixed(1) + 'K';
+  return String(n);
+}
+
+async function ytFetch(path, params) {
+  const key = getKey();
+  if (!key) throw new Error('Falta la API Key. Haz clic en "API Key" arriba y pégala.');
+  const url = new URL(YT + path);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
+  url.searchParams.set('key', key);
+  const res = await fetch(url.toString());
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data?.error?.message || 'Error al llamar a la API de YouTube.');
+  }
+  return data;
+}
+
+async function doSearch() {
+  const query = els.q.value.trim();
+  if (!query) { setStatus('Escribe algo para buscar.'); return; }
+  setStatus('Consultando el endpoint /search en la nube de Google…');
+  els.grid.innerHTML = '';
+  els.emptyState.style.display = 'none';
+  try {
+    const data = await ytFetch('/search', {
+      part: 'snippet', q: query, type: 'video', maxResults: 12
+    });
+    if (!data.items || !data.items.length) {
+      setStatus('Sin resultados.');
+      els.emptyState.style.display = 'block';
+      return;
+    }
+    setStatus(`${data.pageInfo?.totalResults ?? data.items.length} resultados encontrados.`);
+    renderGrid(data.items);
+  } catch (err) {
+    setStatus(err.message, true);
+    els.emptyState.style.display = 'block';
+  }
+}
+
+function renderGrid(items) {
+  els.grid.innerHTML = '';
+  items.forEach(item => {
+    const videoId = item.id.videoId;
+    const s = item.snippet;
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <img src="${s.thumbnails?.medium?.url || ''}" alt="" loading="lazy" />
+      <div class="card-body">
+        <p class="card-title">${escapeHtml(s.title)}</p>
+        <p class="card-channel">${escapeHtml(s.channelTitle)}</p>
+      </div>
+    `;
+    card.addEventListener('click', () => openDetail(videoId));
+    els.grid.appendChild(card);
+  });
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+
+async function openDetail(videoId) {
+  els.overlay.classList.add('open');
+  els.detailBody.innerHTML = '<p style="color:var(--text-dim)">Cargando desde /videos…</p>';
+  try {
+    const vData = await ytFetch('/videos', { part: 'snippet,statistics', id: videoId });
+    const v = vData.items?.[0];
+    if (!v) throw new Error('No se encontró el video.');
+
+    const cData = await ytFetch('/channels', { part: 'snippet,statistics', id: v.snippet.channelId });
+    const c = cData.items?.[0];
+
+    els.detailBody.innerHTML = `
+      <button class="closebtn" id="closeBtn">✕</button>
+      <img src="${v.snippet.thumbnails?.high?.url || ''}" alt="" />
+      <h2>${escapeHtml(v.snippet.title)}</h2>
+      <div class="stats">
+        <div class="stat"><b>${fmt(v.statistics.viewCount)}</b>vistas</div>
+        <div class="stat"><b>${fmt(v.statistics.likeCount)}</b>likes</div>
+        <div class="stat"><b>${fmt(v.statistics.commentCount)}</b>comentarios</div>
+      </div>
+      ${c ? `
+      <div class="channel-row">
+        <img src="${c.snippet.thumbnails?.default?.url || ''}" alt="" />
+        <div>
+          <p class="cn">${escapeHtml(c.snippet.title)}</p>
+          <p class="cs">${fmt(c.statistics.subscriberCount)} suscriptores · ${fmt(c.statistics.videoCount)} videos</p>
+        </div>
+      </div>` : ''}
+      <div class="desc">${escapeHtml(v.snippet.description || 'Sin descripción.')}</div>
+    `;
+    document.getElementById('closeBtn').addEventListener('click', closeDetail);
+  } catch (err) {
+    els.detailBody.innerHTML = `<button class="closebtn" id="closeBtn">✕</button><p style="color:var(--danger)">${escapeHtml(err.message)}</p>`;
+    document.getElementById('closeBtn').addEventListener('click', closeDetail);
+  }
+}
+
+function closeDetail() {
+  els.overlay.classList.remove('open');
+}
+els.overlay.addEventListener('click', (e) => { if (e.target === els.overlay) closeDetail(); });
+
+els.searchBtn.addEventListener('click', doSearch);
+els.q.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
+
+if (!getKey()) {
+  els.keyPanel.style.display = 'flex';
+  setStatus('Pega tu API Key de YouTube Data API v3 para empezar.');
+}
+</script>
+</body>
+</html>
